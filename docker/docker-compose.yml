@@ -1,0 +1,19 @@
+version: '2'
+services:
+  bank-app:
+    image: trunks/bank
+    environment:
+      - _JAVA_OPTIONS=-Xmx512m -Xms256m -Dspring.profiles.active=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://web-postgresql:5432/test?currentSchema=bankinc
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=juang
+    ports:
+      - 9010:8080
+    container_name: bankapp
+    depends_on: [web-postgresql]
+    
+  web-postgresql:
+    extends:
+      file: compose-postgresql.yml
+      service: web-postgresql
+    container_name: web-postgresql

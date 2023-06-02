@@ -1,0 +1,2 @@
+CREATE DATABASE test;
+CREATE SCHEMA bankinc AUTHORIZATION postgres;
