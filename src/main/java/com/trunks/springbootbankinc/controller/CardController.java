@@ -7,8 +7,6 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
-import io.github.jhipster.web.util.HeaderUtil;
-
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +25,9 @@ import com.trunks.springbootbankinc.domain.TransactionType;
 import com.trunks.springbootbankinc.dto.CardEnrollDTO;
 import com.trunks.springbootbankinc.dto.CardReloadDTO;
 import com.trunks.springbootbankinc.exception.BadRequestAlertException;
-import com.trunks.springbootbankinc.repository.CustomerRepository;
 import com.trunks.springbootbankinc.service.CardService;
 
+import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.ResponseUtil;
 import lombok.extern.log4j.Log4j2;
 
@@ -38,15 +36,12 @@ import lombok.extern.log4j.Log4j2;
 @RequestMapping("/card")
 public class CardController {
 	
-	private final CustomerRepository customerRepository;
-	
 	private final CardService cardService;
 	
     @Value("${spring.application.name}")
     private String applicationName;
 	
-	public CardController(CustomerRepository customerRepository, CardService cardService) {
-		this.customerRepository = customerRepository;
+	public CardController(CardService cardService) {
 		this.cardService = cardService;
 	}
 	
@@ -221,4 +216,5 @@ public class CardController {
     	
     	return ResponseUtil.wrapOrNotFound(optionalBalance);
     }
+
 }

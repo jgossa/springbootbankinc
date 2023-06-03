@@ -3,14 +3,18 @@ package com.trunks.springbootbankinc.domain;
 import java.io.Serializable;
 import java.util.Date;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
+
+import org.hibernate.annotations.Type;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,6 +36,11 @@ public class TransactionHistory implements Serializable {
 	private Long id;
 	
 	private Date date;
+	
+    @Column(name = "transactionumber", columnDefinition = "text")
+    @Type(type = "org.hibernate.type.TextType")
+    @Lob
+    private String transactionNumber;
 	
 	private Float accountBalance;
 	private TransactionType transactionType;
