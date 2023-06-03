@@ -11,6 +11,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,10 +22,12 @@ import com.trunks.springbootbankinc.domain.Card;
 import com.trunks.springbootbankinc.domain.TransactionHistory;
 import com.trunks.springbootbankinc.domain.TransactionType;
 import com.trunks.springbootbankinc.dto.CardPurchaseDTO;
+import com.trunks.springbootbankinc.dto.TransactionInfoDTO;
 import com.trunks.springbootbankinc.exception.BadRequestAlertException;
 import com.trunks.springbootbankinc.service.CardService;
 
 import io.github.jhipster.web.util.HeaderUtil;
+import io.github.jhipster.web.util.ResponseUtil;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -116,6 +120,20 @@ public class CardTransactionController {
         return ResponseEntity.created(new URI("/card/enroll/" + cardResponse.getNumber()))
                 .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, "Card", cardResponse.getNumber()))
                 .body(cardResponse);
+    }
+    
+    @GetMapping("/{transactionId}")
+    public ResponseEntity<TransactionInfoDTO> getPurchaseTransaction(@PathVariable String transactionId) {
+    	
+        log.debug("REST request to get Card by transaction: {}", transactionId);
+        
+        //Search the card
+        Optional<Card> optionalCard = cardService.findCardByTransactionNumber(transactionId);        
+        Card card = optionalCard.orElseThrow(() -> new BadRequestAlertException("The card didn´t exist", "Card", "cardIdNull"));
+        
+        TransactionInfoDTO trxDTOResponse = cardService.buildTransactionDTOResponse(card);
+        
+        return ResponseUtil.wrapOrNotFound(Optional.ofNullable(trxDTOResponse));
     }
 
 }

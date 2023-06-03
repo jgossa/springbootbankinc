@@ -13,6 +13,7 @@ import com.trunks.springbootbankinc.domain.Customer;
 import com.trunks.springbootbankinc.domain.DocumentType;
 import com.trunks.springbootbankinc.domain.TransactionHistory;
 import com.trunks.springbootbankinc.domain.TransactionType;
+import com.trunks.springbootbankinc.dto.TransactionInfoDTO;
 import com.trunks.springbootbankinc.exception.BadRequestAlertException;
 import com.trunks.springbootbankinc.repository.CardRepository;
 import com.trunks.springbootbankinc.repository.CustomerRepository;
@@ -43,6 +44,12 @@ public class CardServiceImpl implements CardService{
 	public Optional<Card> findByCardNumber(String number) {
 		
 		return cardRepository.findByCardNumber(number);
+	}
+	
+	@Override
+	public Optional<Card> findCardByTransactionNumber(String transactionId) {
+
+		return cardRepository.findCardByTransactionNumber(transactionId);
 	}
 
 	@Override
@@ -148,4 +155,23 @@ public class CardServiceImpl implements CardService{
         Optional<Card> optionalCard = findByCardNumber(idCard);
         optionalCard.ifPresent( v -> { throw new BadRequestAlertException("The card exist for the user", "Card", "findByCardNumber"); } );
 	}
+
+	@Override
+	public TransactionInfoDTO buildTransactionDTOResponse(Card card) {
+		
+        Optional<TransactionHistory> optionaltrxHistory = card.getTransactionHistories().stream()
+            	.filter(v -> v.getTransactionNumber()!=null)
+            	.filter(v -> v.getTransactionNumber().equals(card.getTransactionNumber()))
+            	.findAny();
+        TransactionHistory trxHistory = optionaltrxHistory.orElseThrow(() -> new BadRequestAlertException("The transaction id don't exists", "TransactionHistory", "trxIdNull"));
+            
+        return TransactionInfoDTO.builder()
+        		.date(trxHistory.getDate())
+        		.cardNumber(card.getNumber())
+        		.transactionNumber(trxHistory.getTransactionNumber())
+        		.accountBalance(card.getAccountBalance())
+        		.transactionType(trxHistory.getTransactionType())
+        		.build();
+	}
+
 }

@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import com.trunks.springbootbankinc.domain.Card;
 import com.trunks.springbootbankinc.domain.Customer;
+import com.trunks.springbootbankinc.dto.TransactionInfoDTO;
 
 public interface CardService {
 	
@@ -11,6 +12,8 @@ public interface CardService {
 	
 	Optional<Card> findByCardNumber(String number);
 
+	Optional<Card> findCardByTransactionNumber(String transactionId);
+	
 	void validateCardNumberParams(String productId, String document, String documentType);
 
 	Customer validateDbCustomer(String documentType, String document);
@@ -20,5 +23,7 @@ public interface CardService {
 	void validateProductIdInCustomerCard(String productid, Customer customer);
 
 	void validateCardInDb(String idCard);
+
+	TransactionInfoDTO buildTransactionDTOResponse(Card card);
 
 }
