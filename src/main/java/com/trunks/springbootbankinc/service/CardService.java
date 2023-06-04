@@ -24,6 +24,6 @@ public interface CardService {
 
 	void validateCardInDb(String idCard);
 
-	TransactionInfoDTO buildTransactionDTOResponse(Card card);
+	TransactionInfoDTO buildTransactionDTOResponse(Card card, String transactionId);
 
 }

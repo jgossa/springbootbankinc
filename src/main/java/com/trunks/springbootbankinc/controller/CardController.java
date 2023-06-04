@@ -90,6 +90,7 @@ public class CardController {
         	    .date(new Date())
         		.transactionType(TransactionType.CARDACTIVATION)
         		.accountBalance(Float.valueOf("0.0"))
+        		.transactionAmmount(Float.valueOf("0.0"))
         		.enroll(true)
         		.block(false)
         		.build();
@@ -129,6 +130,7 @@ public class CardController {
          	    .date(new Date())
          		.transactionType(TransactionType.CARDLOCK)
          		.accountBalance(Float.valueOf("0.0"))
+         		.transactionAmmount(Float.valueOf("0.0"))
          		.enroll(true)
          		.block(true)
          		.build();
@@ -177,6 +179,7 @@ public class CardController {
         	    .date(new Date())
         		.transactionType(TransactionType.CARDLOCK)
         		.accountBalance(balance)
+        		.transactionAmmount(Float.valueOf("0.0"))
         		.enroll(true)
         		.block(false)
         		.build();

@@ -43,11 +43,6 @@ public class Card implements Serializable {
 	private String idProducto;
     private String number;
     
-    @Column(name = "transactionumber", columnDefinition = "text")
-    @Type(type = "org.hibernate.type.TextType")
-    @Lob
-    private String transactionNumber;
-    
     private Date dueDate;
     private Date creationDate;
     

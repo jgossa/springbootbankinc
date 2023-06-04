@@ -43,6 +43,8 @@ public class TransactionHistory implements Serializable {
     private String transactionNumber;
 	
 	private Float accountBalance;
+	private Float transactionAmmount;
+	
 	private TransactionType transactionType;
 	
 	private Boolean enroll;

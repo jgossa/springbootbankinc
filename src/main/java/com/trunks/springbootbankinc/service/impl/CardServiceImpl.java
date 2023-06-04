@@ -140,7 +140,7 @@ public class CardServiceImpl implements CardService{
 	@Override
 	public void validateProductIdInCustomerCard(String productid, Customer customer) {
 
-		//verify that the productId doesn't in the list of user cards
+		//verify that the productId is not in the list of user cards
         Optional<String> optionalIdProducto = customer.getCards().stream()
         	.map(Card::getIdProducto)
         	.filter(v -> v!=null && v.equals(productid))
@@ -157,11 +157,11 @@ public class CardServiceImpl implements CardService{
 	}
 
 	@Override
-	public TransactionInfoDTO buildTransactionDTOResponse(Card card) {
+	public TransactionInfoDTO buildTransactionDTOResponse(Card card, String transactionId) {
 		
         Optional<TransactionHistory> optionaltrxHistory = card.getTransactionHistories().stream()
             	.filter(v -> v.getTransactionNumber()!=null)
-            	.filter(v -> v.getTransactionNumber().equals(card.getTransactionNumber()))
+            	.filter(v -> v.getTransactionNumber().equals(transactionId))
             	.findAny();
         TransactionHistory trxHistory = optionaltrxHistory.orElseThrow(() -> new BadRequestAlertException("The transaction id don't exists", "TransactionHistory", "trxIdNull"));
             

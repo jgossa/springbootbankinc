@@ -20,6 +20,7 @@ public class TransactionInfoDTO {
     private String transactionNumber;
 	
 	private Float accountBalance;
+	private Float transactionAmmount;
 	
 	private TransactionType transactionType;
 
