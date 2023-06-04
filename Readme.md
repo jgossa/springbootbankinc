@@ -6,7 +6,7 @@ Para construir esta aplicacion ud necesita:
 
 - [JDK 11](https://jdk.java.net/11/)
 - [Maven 3](https://maven.apache.org)
-- [PostgreSql >=4](https://www.mongodb.com/try/download/community) o [Docker](https://www.docker.com/)
+- [PostgreSql >=10.5](https://www.postgresql.org) o [Docker](https://www.docker.com/)
 
 ## Correr la aplicacion localmente
 
@@ -17,13 +17,13 @@ Para construir esta aplicacion ud necesita:
 - Docker Compose
 <br>
 Desde una terminal ubicada en la raiz del proyecto ejecutar:
-<br><code>mvn compile jib:dockerBuild ; docker-compose -f src/main/docker/app.yml up</code>
+<br><code>docker build -t postgres-bankinc:latest ./docker/postgres ; mvn compile jib:dockerBuild ; docker-compose -f docker/docker-compose.yml up</code>
 </li>
 <li>Tambien puede utilizar Spring Boot Maven plugin:
   <br><code>mvn spring-boot:run -Dspring-boot.run.profiles=dev</code>
 </li>
 <li>
-Para ejecutar la aplicacion Spring Boot en tu maquina local  es necesario ejecutar el  <code>main</code> metodo en la clase 
-<code>co.com.mercado.libre.prueba.SpringApplication</code> desde su IDE.
+Para ejecutar la aplicacion Spring Boot en tu maquina local  es necesario ejecutar el método <code>main</code> en la clase 
+<code>com.trunks.springbootbankinc.SpringApplication</code> desde su IDE preferido :)
 </li>
 </ol>
