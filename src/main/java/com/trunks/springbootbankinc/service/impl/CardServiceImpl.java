@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 
 import com.trunks.springbootbankinc.domain.Card;
@@ -13,6 +15,9 @@ import com.trunks.springbootbankinc.domain.Customer;
 import com.trunks.springbootbankinc.domain.DocumentType;
 import com.trunks.springbootbankinc.domain.TransactionHistory;
 import com.trunks.springbootbankinc.domain.TransactionType;
+import com.trunks.springbootbankinc.dto.CardAnulationTransanctioDTO;
+import com.trunks.springbootbankinc.dto.CardPurchaseDTO;
+import com.trunks.springbootbankinc.dto.CardTrxInfoWrapperDTO;
 import com.trunks.springbootbankinc.dto.TransactionInfoDTO;
 import com.trunks.springbootbankinc.exception.BadRequestAlertException;
 import com.trunks.springbootbankinc.repository.CardRepository;
@@ -29,9 +34,12 @@ public class CardServiceImpl implements CardService{
 	
 	private final CustomerRepository customerRepository;
 	
-	public CardServiceImpl(CardRepository cardRepository, CustomerRepository customerRepository) {
+	//private final CardService cardService;
+	
+	public CardServiceImpl(CardRepository cardRepository, CustomerRepository customerRepository/*, CardService cardService*/) {
 		this.cardRepository = cardRepository;
 		this.customerRepository = customerRepository;
+		//this.cardService = cardService;
 	}
 
 	@Override
@@ -196,5 +204,116 @@ public class CardServiceImpl implements CardService{
         
         return card;
 	}
+	
+	@Override
+	public CardTrxInfoWrapperDTO buildPurchaseTrxInfoDTO(Card card, CardPurchaseDTO cardPurchaseDTO) {
+		
+		//check if the balance is adequate
+        Float balance = card.getAccountBalance() - cardPurchaseDTO.getPrice();
+        
+        if(balance.floatValue() < 0.0) {
+        	throw new BadRequestAlertException("The card balance is insufficient", "Card", "insuficientCardBalance");
+        }
+        
+        //Generate transaction number
+        String inicString = RandomStringUtils.randomNumeric(50) + cardPurchaseDTO.getCardId();
+        String sha256TransactionNumber = DigestUtils.sha256Hex(inicString);
+        
+        //
+        TransactionHistory transactionHistory = TransactionHistory.builder()
+        	    .date(new Date())
+        		.transactionType(TransactionType.PURCHASETRANSACTION)
+        		.transactionNumber(sha256TransactionNumber)
+        		.accountBalance(balance)
+        		.transactionAmmount(cardPurchaseDTO.getPrice())
+        		.enroll(true)
+        		.block(false)
+        		.build();
+        
+        card.setAccountBalance(balance);
+        card.setTransactionType(TransactionType.PURCHASETRANSACTION);
+        card.setEnroll(true);
+        card.setBlock(false);
+        card.addTrx(transactionHistory);
+        
+        transactionHistory.setCard(card);
+        //
+        
+        TransactionInfoDTO trxInfoDTO = TransactionInfoDTO.builder()
+        		.date(transactionHistory.getDate())
+			 	.cardNumber(card.getNumber())
+			 	.transactionNumber(transactionHistory.getTransactionNumber())
+			 	.transactionAmmount(transactionHistory.getTransactionAmmount())
+			 	.accountBalance(card.getAccountBalance())
+			 	.transactionType(transactionHistory.getTransactionType())
+			 	.build();
+        
+        return CardTrxInfoWrapperDTO.builder()
+        		.card(card)
+        		.transactionInfoDTO(trxInfoDTO)
+        		.build();
+	}
+	
+	@Override
+	public CardTrxInfoWrapperDTO buildAnulationTrxInfoDTO(Card card, CardAnulationTransanctioDTO cardAnulationTransanctioDTO) {
+        //
+        Optional<TransactionHistory> optionaltrxHistory = card.getTransactionHistories().stream()
+            	.filter(v -> v.getTransactionNumber()!=null)
+            	.filter(v -> v.getTransactionNumber().equals(cardAnulationTransanctioDTO.getTransactionId()))
+            	.findAny();
+        TransactionHistory trxHistory = optionaltrxHistory.orElseThrow(() -> new BadRequestAlertException("The transaction id don't exists", "TransactionHistory", "trxIdNull"));
+        
+        Float balance = trxHistory.getAccountBalance() + trxHistory.getTransactionAmmount();
+        
 
+        //The transaction to be canceled must not be older than 24 hours.
+        Date currentDate = trxHistory.getDate();
+        long longCurrentDate = currentDate.getTime();
+        long longFutureDate = longCurrentDate + (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+        Date futureDate = new Date(longFutureDate); // Current Date + 24 hours
+        
+        if(!currentDate.before(futureDate)) {
+       	 throw new BadRequestAlertException("The transaction to be canceled is greater than 24 hours.", "Card", "dateError");
+        }
+        
+        //Do not reverse a reversed transaction.
+        if(trxHistory.getTransactionType().equals(TransactionType.REVERSEDTRANSACTION)) {
+       	 throw new BadRequestAlertException("Do not reverse a reversed transaction.", "Card", "transactionError");
+        }
+        
+        //
+        TransactionHistory transactionHistory = TransactionHistory.builder()
+        	    .date(new Date())
+        		.transactionType(TransactionType.ANULATIONTRANSACTION)
+        		.accountBalance(balance)
+        		.transactionAmmount(trxHistory.getTransactionAmmount())
+        		.enroll(true)
+        		.block(false)
+        		.build();
+        
+        card.setAccountBalance(balance);
+        card.setTransactionType(TransactionType.ANULATIONTRANSACTION);
+        card.setEnroll(true);
+        card.setBlock(false);
+        card.addTrx(transactionHistory);
+        
+        trxHistory.setTransactionType(TransactionType.REVERSEDTRANSACTION);
+        
+        transactionHistory.setCard(card);
+        //
+        
+        TransactionInfoDTO trxInfoDTO = TransactionInfoDTO.builder()
+   			.date(trxHistory.getDate())
+	 		.cardNumber(card.getNumber())
+	 		.transactionNumber(trxHistory.getTransactionNumber())
+	 		.transactionAmmount(trxHistory.getTransactionAmmount())
+	 		.accountBalance(card.getAccountBalance())
+	 		.transactionType(trxHistory.getTransactionType())
+	 		.build();
+        
+        return CardTrxInfoWrapperDTO.builder()
+        		.card(card)
+        		.transactionInfoDTO(trxInfoDTO)
+        		.build();
+	}
 }

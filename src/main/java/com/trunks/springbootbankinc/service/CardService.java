@@ -5,6 +5,9 @@ import java.util.Optional;
 import com.trunks.springbootbankinc.domain.Card;
 import com.trunks.springbootbankinc.domain.Customer;
 import com.trunks.springbootbankinc.domain.TransactionType;
+import com.trunks.springbootbankinc.dto.CardAnulationTransanctioDTO;
+import com.trunks.springbootbankinc.dto.CardPurchaseDTO;
+import com.trunks.springbootbankinc.dto.CardTrxInfoWrapperDTO;
 import com.trunks.springbootbankinc.dto.TransactionInfoDTO;
 
 public interface CardService {
@@ -28,5 +31,9 @@ public interface CardService {
 	TransactionInfoDTO buildTransactionDTOResponse(Card card, String transactionId);
 
 	Card buildCardTrxHistory(Card card, TransactionType transactionType, boolean enroll, boolean block, Float balance, Float trxAmmount);
+
+	CardTrxInfoWrapperDTO buildPurchaseTrxInfoDTO(Card card, CardPurchaseDTO cardPurchaseDTO);
+
+	CardTrxInfoWrapperDTO buildAnulationTrxInfoDTO(Card card, CardAnulationTransanctioDTO cardAnulationTransanctioDTO);
 
 }

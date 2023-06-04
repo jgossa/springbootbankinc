@@ -7,8 +7,6 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,10 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.trunks.springbootbankinc.domain.Card;
-import com.trunks.springbootbankinc.domain.TransactionHistory;
-import com.trunks.springbootbankinc.domain.TransactionType;
 import com.trunks.springbootbankinc.dto.CardAnulationTransanctioDTO;
 import com.trunks.springbootbankinc.dto.CardPurchaseDTO;
+import com.trunks.springbootbankinc.dto.CardTrxInfoWrapperDTO;
 import com.trunks.springbootbankinc.dto.TransactionInfoDTO;
 import com.trunks.springbootbankinc.exception.BadRequestAlertException;
 import com.trunks.springbootbankinc.service.CardService;
@@ -70,65 +67,21 @@ public class CardTransactionController {
         }
         
         //Check negative balance
-        if(card.getAccountBalance() < 0L) {
+        if(card.getAccountBalance() < 0.0F) {
         	throw new BadRequestAlertException("The card balance is negative", "Card", "negativeCardBalance");
         	
         }
         
-        //check if the balance is adequate
-        Float balance = card.getAccountBalance() - cardPurchaseDTO.getPrice();
+        CardTrxInfoWrapperDTO wrapper = cardService.buildPurchaseTrxInfoDTO(card, cardPurchaseDTO);
         
-        if(balance.floatValue() < 0.0) {
-        	throw new BadRequestAlertException("The card balance is insufficient", "Card", "insuficientCardBalance");
-        }
-        
-        //Generate transaction number
-        String inicString = RandomStringUtils.randomNumeric(50) + cardPurchaseDTO.getCardId();
-        String sha256TransactionNumber = DigestUtils.sha256Hex(inicString);
-        
-        
-        
-        //
-        TransactionHistory transactionHistory = TransactionHistory.builder()
-        	    .date(new Date())
-        		.transactionType(TransactionType.PURCHASETRANSACTION)
-        		.transactionNumber(sha256TransactionNumber)
-        		.accountBalance(balance)
-        		.transactionAmmount(cardPurchaseDTO.getPrice())
-        		.enroll(true)
-        		.block(false)
-        		.build();
-        
-        card.setAccountBalance(balance);
-        card.setTransactionType(TransactionType.PURCHASETRANSACTION);
-        card.setEnroll(true);
-        card.setBlock(false);
-        card.addTrx(transactionHistory);
-        
-        transactionHistory.setCard(card);
-        //
-      
-
-        
-       
         //update card
-        Card cardResult = cardService.save(card);
+        Card cardResult = cardService.save(wrapper.getCard());
         
         log.debug("Card updated: " + cardResult.getCreationDate());
     	
-        TransactionInfoDTO  trxDTOResponse = TransactionInfoDTO.builder()
-       		.date(transactionHistory.getDate())
-		 	.cardNumber(card.getNumber())
-		 	.transactionNumber(transactionHistory.getTransactionNumber())
-		 	.transactionAmmount(transactionHistory.getTransactionAmmount())
-		 	.accountBalance(card.getAccountBalance())
-		 	.transactionType(transactionHistory.getTransactionType())
-		 	.build();
-    	
-        return ResponseEntity.created(new URI("/card/enroll/" + trxDTOResponse.getCardNumber()))
-                .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, "Card", trxDTOResponse.getCardNumber()))
-                .body(trxDTOResponse);
-    }
+        return ResponseEntity.created(new URI("/transaction/purchase/" + wrapper.getTransactionInfoDTO().getCardNumber()))
+                .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, "Card", wrapper.getTransactionInfoDTO().getCardNumber()))
+                .body(wrapper.getTransactionInfoDTO());    }
     
     @GetMapping("/{transactionId}")
     public ResponseEntity<TransactionInfoDTO> getPurchaseTransaction(@PathVariable String transactionId) {
@@ -163,71 +116,16 @@ public class CardTransactionController {
          	throw new BadRequestAlertException("The card is blocked", "Card", "blockedCard");
          }
          
-         //
-         Optional<TransactionHistory> optionaltrxHistory = card.getTransactionHistories().stream()
-             	.filter(v -> v.getTransactionNumber()!=null)
-             	.filter(v -> v.getTransactionNumber().equals(cardAnulationTransanctioDTO.getTransactionId()))
-             	.findAny();
-         TransactionHistory trxHistory = optionaltrxHistory.orElseThrow(() -> new BadRequestAlertException("The transaction id don't exists", "TransactionHistory", "trxIdNull"));
-         
-         Float balance = trxHistory.getAccountBalance() + trxHistory.getTransactionAmmount();
-         
-
-         //The transaction to be canceled must not be older than 24 hours.
-         Date currentDate = trxHistory.getDate();
-         long longCurrentDate = currentDate.getTime();
-         long longFutureDate = longCurrentDate + (24 * 60 * 60 * 1000); // 24 hours in milliseconds
-         Date futureDate = new Date(longFutureDate); // Current Date + 24 hours
-         
-         if(!currentDate.before(futureDate)) {
-        	 throw new BadRequestAlertException("The transaction to be canceled is greater than 24 hours.", "Card", "dateError");
-         }
-         
-         //Do not reverse a reversed transaction.
-         if(trxHistory.getTransactionType().equals(TransactionType.REVERSEDTRANSACTION)) {
-        	 throw new BadRequestAlertException("Do not reverse a reversed transaction.", "Card", "transactionError");
-         }
-         
-         //
-         TransactionHistory transactionHistory = TransactionHistory.builder()
-         	    .date(new Date())
-         		.transactionType(TransactionType.ANULATIONTRANSACTION)
-         		.accountBalance(balance)
-         		.transactionAmmount(trxHistory.getTransactionAmmount())
-         		.enroll(true)
-         		.block(false)
-         		.build();
-         
-         card.setAccountBalance(balance);
-         card.setTransactionType(TransactionType.ANULATIONTRANSACTION);
-         card.setEnroll(true);
-         card.setBlock(false);
-         card.addTrx(transactionHistory);
-         
-         trxHistory.setTransactionType(TransactionType.REVERSEDTRANSACTION);
-         
-         transactionHistory.setCard(card);
-         //         
-         
-         
-         
-         //
-         TransactionInfoDTO  trxDTOResponse = TransactionInfoDTO.builder()
-        		.date(trxHistory.getDate())
-		 		.cardNumber(card.getNumber())
-		 		.transactionNumber(trxHistory.getTransactionNumber())
-		 		.transactionAmmount(trxHistory.getTransactionAmmount())
-		 		.accountBalance(card.getAccountBalance())
-		 		.transactionType(trxHistory.getTransactionType())
-		 		.build();
-		 //
+         CardTrxInfoWrapperDTO wrapper = cardService.buildAnulationTrxInfoDTO(card, cardAnulationTransanctioDTO);
          
          //update card
-         Card cardResult = cardService.save(card);
-    	 
-         return ResponseEntity.created(new URI("/card/enroll/" + cardResult.getNumber()))
-                 .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, "Card", cardResult.getNumber()))
-                 .body(trxDTOResponse);
+         Card cardResult = cardService.save(wrapper.getCard());
+
+         log.debug("Card updated: " + cardResult.getCreationDate());
+         
+         return ResponseEntity.created(new URI("/transaction/anulation/" + wrapper.getTransactionInfoDTO().getCardNumber()))
+                 .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, "Card", wrapper.getTransactionInfoDTO().getCardNumber()))
+                 .body(wrapper.getTransactionInfoDTO());
     }
 
 }
