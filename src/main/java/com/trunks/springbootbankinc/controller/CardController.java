@@ -2,7 +2,6 @@ package com.trunks.springbootbankinc.controller;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Date;
 import java.util.Optional;
 
 import javax.validation.Valid;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.trunks.springbootbankinc.domain.Card;
 import com.trunks.springbootbankinc.domain.Customer;
-import com.trunks.springbootbankinc.domain.TransactionHistory;
 import com.trunks.springbootbankinc.domain.TransactionType;
 import com.trunks.springbootbankinc.dto.CardEnrollDTO;
 import com.trunks.springbootbankinc.dto.CardReloadDTO;
@@ -84,25 +82,7 @@ public class CardController {
         	throw new BadRequestAlertException("The card already has an activation", "Card", " already enroll");
         }
         
-        
-        //
-        TransactionHistory transactionHistory = TransactionHistory.builder()
-        	    .date(new Date())
-        		.transactionType(TransactionType.CARDACTIVATION)
-        		.accountBalance(Float.valueOf("0.0"))
-        		.transactionAmmount(Float.valueOf("0.0"))
-        		.enroll(true)
-        		.block(false)
-        		.build();
-        
-        card.setTransactionType(TransactionType.CARDACTIVATION);
-        card.setEnroll(true);
-        card.setBlock(false);
-        card.addTrx(transactionHistory);
-        
-        transactionHistory.setCard(card);
-        //
-        
+        card = cardService.buildCardTrxHistory(card, TransactionType.CARDACTIVATION, true, false, Float.valueOf("0.0"), Float.valueOf("0.0"));
         
         //update card
         Card cardResult = cardService.save(card);
@@ -124,25 +104,7 @@ public class CardController {
          Optional<Card> optionalCard = cardService.findByCardNumber(cardId);
          Card card = optionalCard.orElseThrow(() -> new BadRequestAlertException("The card didn´t exist", "Card", "cardIdNull"));
          
-         
-         //
-         TransactionHistory transactionHistory = TransactionHistory.builder()
-         	    .date(new Date())
-         		.transactionType(TransactionType.CARDLOCK)
-         		.accountBalance(Float.valueOf("0.0"))
-         		.transactionAmmount(Float.valueOf("0.0"))
-         		.enroll(true)
-         		.block(true)
-         		.build();
-         
-         card.setTransactionType(TransactionType.CARDLOCK);
-         card.setEnroll(true);
-         card.setBlock(true);
-         card.addTrx(transactionHistory);
-         
-         transactionHistory.setCard(card);
-         //
-         
+         card = cardService.buildCardTrxHistory(card, TransactionType.CARDLOCK, true, true, card.getAccountBalance(), Float.valueOf("0.0"));
          
          //update card
          Card cardResult = cardService.save(card);
@@ -172,28 +134,8 @@ public class CardController {
         }
                 
         Float balance = card.getAccountBalance() + Float.valueOf(cardReloadDTO.getBalance());
-        
-        
-        //
-        TransactionHistory transactionHistory = TransactionHistory.builder()
-        	    .date(new Date())
-        		.transactionType(TransactionType.CARDLOCK)
-        		.accountBalance(balance)
-        		.transactionAmmount(Float.valueOf("0.0"))
-        		.enroll(true)
-        		.block(false)
-        		.build();
-        
-        card.setAccountBalance(balance);
-        card.setTransactionType(TransactionType.CARDLOCK);
-        card.setEnroll(true);
-        card.setBlock(false);
-        card.addTrx(transactionHistory);
-        
-        transactionHistory.setCard(card);
-        //
 
-        
+        card = cardService.buildCardTrxHistory(card, TransactionType.CARDLOCK, true, false, balance, Float.valueOf("0.0"));        
         
         //update card
         Card cardResult = cardService.save(card);

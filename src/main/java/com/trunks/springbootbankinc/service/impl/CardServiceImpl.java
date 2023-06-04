@@ -173,5 +173,28 @@ public class CardServiceImpl implements CardService{
         		.transactionType(trxHistory.getTransactionType())
         		.build();
 	}
+	
+	@Override
+	public Card buildCardTrxHistory(Card card, TransactionType transactionType, boolean enroll, boolean block, Float balance, Float trxAmmount) {
+		
+        TransactionHistory transactionHistory = TransactionHistory.builder()
+        	    .date(new Date())
+        		.transactionType(transactionType)
+        		.accountBalance(balance)
+        		.transactionAmmount(trxAmmount)
+        		.enroll(enroll)
+        		.block(block)
+        		.build();
+        
+        card.setAccountBalance(balance);
+        card.setTransactionType(transactionType);
+        card.setEnroll(enroll);
+        card.setBlock(block);
+        card.addTrx(transactionHistory);
+        
+        transactionHistory.setCard(card);
+        
+        return card;
+	}
 
 }
