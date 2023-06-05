@@ -34,12 +34,9 @@ public class CardServiceImpl implements CardService{
 	
 	private final CustomerRepository customerRepository;
 	
-	//private final CardService cardService;
-	
-	public CardServiceImpl(CardRepository cardRepository, CustomerRepository customerRepository/*, CardService cardService*/) {
+	public CardServiceImpl(CardRepository cardRepository, CustomerRepository customerRepository) {
 		this.cardRepository = cardRepository;
 		this.customerRepository = customerRepository;
-		//this.cardService = cardService;
 	}
 
 	@Override
