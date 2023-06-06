@@ -262,20 +262,18 @@ public class CardServiceImpl implements CardService{
         
         Float balance = trxHistory.getAccountBalance() + trxHistory.getTransactionAmmount();
         
-
-        //The transaction to be canceled must not be older than 24 hours.
-        Date currentDate = trxHistory.getDate();
-        long longCurrentDate = currentDate.getTime();
-        long longFutureDate = longCurrentDate + (24 * 60 * 60 * 1000); // 24 hours in milliseconds
-        Date futureDate = new Date(longFutureDate); // Current Date + 24 hours
+        Date lowerLimitDate = trxHistory.getDate();
+        long longLowerLimitDate = lowerLimitDate.getTime();
+        long longUperLimitDate = longLowerLimitDate + (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+        Date upperLimitDate = new Date(longUperLimitDate);
         
-        if(!currentDate.before(futureDate)) {
-       	 throw new BadRequestAlertException("The transaction to be canceled is greater than 24 hours.", "Card", "dateError");
+        if(lowerLimitDate.after(new Date()) || new Date().after(upperLimitDate)) {
+        	throw new BadRequestAlertException("The transaction to be canceled is greater than 24 hours.", "Card", "dateError");
         }
         
         //Do not reverse a reversed transaction.
         if(trxHistory.getTransactionType().equals(TransactionType.REVERSEDTRANSACTION)) {
-       	 throw new BadRequestAlertException("Do not reverse a reversed transaction.", "Card", "transactionError");
+        	throw new BadRequestAlertException("Do not reverse a reversed transaction.", "Card", "transactionError");
         }
         
         //
